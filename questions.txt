@@ -1,0 +1,4 @@
+1. Is a ThreadManager class a good idea? or is it a waste of main thread?
+2. Private fields with getters/setters vs public fields? for simple setters
+3. Do I assume the users trade with themselves, or with the exchange?
+    I assume that at start exchange owns all shares and users own all the money.
