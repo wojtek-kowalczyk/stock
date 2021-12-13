@@ -29,7 +29,7 @@ public class Exchange {
     private ArrayList<Asset> assets;
     private ArrayList<Order> orders; // earlier orders have lower index
 
-    public boolean stop = false; // todo - consider a better implementation
+    private boolean stop = false; // todo - consider a better implementation
 
     public Exchange() {
         assets = new ArrayList<Asset>();
@@ -37,23 +37,29 @@ public class Exchange {
     }
 
     public void init() {
+        System.out.println("creating assets");
         createAssets();
-        User dummy = new User("dummy-user", 100000000);
+
+        // #region debug
+        System.out.println("creating user and placing orders");
+        User dummy = new User("dummy-user", 1_000_000);
         try {
             placeOrder(new Order(assets.get(0), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(1), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(2), OrderType.BUY, true, 10, 10, dummy));
-            placeOrder(new Order(assets.get(2), OrderType.BUY, true, 5, 10000, dummy));
+            placeOrder(new Order(assets.get(2), OrderType.BUY, true, 5, 10_000, dummy));
             placeOrder(new Order(assets.get(3), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(4), OrderType.BUY, true, 10, 10, dummy));
 
-            // System.out.println("All orders: ");
-            // for (Asset asset : assets) {
-
-            // }
+            System.out.println("All orders: ");
+            for (Order order : orders) {
+                System.out.println(order.toString());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        // #endregion
+
         while (!stop) {
             try {
                 executeTasks();
@@ -61,22 +67,27 @@ public class Exchange {
             } catch (InterruptedException e) {
                 System.out.println("Exception in exchange main loop");
                 e.printStackTrace();
-                stop = true;
+                halt();
             }
         }
     }
 
+    public void halt() {
+        stop = true;
+    }
+
+    // ? is there a point in this? it returns a reference = can be modified
     public List<Asset> getAssets() {
         return assets;
     }
 
     private void executeTasks() {
         System.out.println("Executing tasks");
-        // change the price
         for (Asset asset : assets) {
             asset.price = getNewPrice(asset.price, MIN_PRICE_CHANGE, MAX_PRICE_CHANGE);
         }
-        // DEBUG
+
+        // #region debug
         System.out.println("Assets:");
         for (Asset asset : assets) {
             System.out.println(asset.toString());
@@ -85,18 +96,21 @@ public class Exchange {
         for (Order order : orders) {
             System.out.println(order.toString());
         }
-        // END DEBUG
-        // after the price is changed refresh orders to see if some can be completed
+        // #endregion
+
         while (checkOrders()) {
             // ? is this a good idea? seems like a workaround
             // this will continue checking untill no order is able to be executed
             // this is because when order in the middle of the list is executed it triggers
             // a price change, and orders should be checked again, from the begining
         }
+
+        // #region debug
         System.out.println("Orders After checking :");
         for (Order order : orders) {
             System.out.println(order.toString());
         }
+        // #endregion
 
     }
 
@@ -118,8 +132,9 @@ public class Exchange {
             throw new NotEnoughSharesException("not enough shares", order.quantity, order.asset.getTotalShares());
         order.user.changeBalance(-order.quantity * order.price); // negative change = subtract
         orders.add(order);
-        while (checkOrders()) {
-        }
+        // temp ! commented out for debugging
+        // while (checkOrders()) {
+        // }
     }
 
     private void createAssets() {
@@ -176,6 +191,7 @@ public class Exchange {
                             executeOrder(order);
                             return true;
                         }
+                        break;
                     case SELL:
                         if (order.price <= order.asset.price) {
                             System.out.println("executing sell order. order price: " + order.price + ", asset price: "
@@ -183,6 +199,7 @@ public class Exchange {
                             executeOrder(order);
                             return true;
                         }
+                        break;
                     default:
                         break;
                 }
@@ -220,5 +237,4 @@ public class Exchange {
         }
         System.out.println("Successfully executed order " + order.toString());
     }
-
 }
