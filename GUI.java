@@ -16,5 +16,6 @@ public class GUI {
 
         user2Window.setSize(600, 400);
         user2Window.setVisible(true);
+        // test
     }
 }
