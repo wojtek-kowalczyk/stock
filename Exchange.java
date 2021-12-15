@@ -1,7 +1,14 @@
+import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Random;
 import java.util.Scanner;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import exceptions.InsufficientFundsException;
 import exceptions.NotEnoughSharesException;
@@ -40,9 +47,61 @@ public class Exchange {
         System.out.println("creating assets");
         createAssets();
 
+        // GUI
+        final int PADDING = 50;
+        final int WIDTH = 800;
+        final int HEIGHT = 600;
+        JFrame exchangeWindow = new JFrame("Exchange");
+
+        // OUTPUT FIELDS
+        JTextArea assetArea = new JTextArea("ASSETS WILL BE DISPLAYED HERE");
+        assetArea.setBounds(PADDING, PADDING, WIDTH - 2 * PADDING, (HEIGHT - 2 * PADDING) / 2);
+        assetArea.setEditable(false);
+        exchangeWindow.add(assetArea);
+
+        JTextArea consoleArea = new JTextArea("CONSOLE OUTPUT WILL BE DISPLAYED HERE");
+        consoleArea.setBounds(
+                PADDING,
+                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
+                (WIDTH - 2 * PADDING) / 2 - PADDING / 2,
+                (HEIGHT - 3 * PADDING) / 2);
+        consoleArea.setEditable(false);
+        exchangeWindow.add(consoleArea);
+        JTextArea ordersArea = new JTextArea("ACTIVE ORDERS WILL BE DISPLAYED HERE");
+        ordersArea.setBounds(
+                PADDING + (WIDTH - 2 * PADDING) / 2 - PADDING / 2 + PADDING / 2,
+                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
+                (WIDTH - 2 * PADDING) / 2,
+                (HEIGHT - 3 * PADDING) / 2);
+        ordersArea.setEditable(false);
+        exchangeWindow.add(ordersArea);
+
+        // USER LOGIN AREA
+        JLabel usernameLabel = new JLabel("username:");
+        usernameLabel.setBounds(PADDING / 2, 0, 100, 50);
+        exchangeWindow.add(usernameLabel);
+
+        JTextField usernameField = new JTextField();
+        usernameField.setBounds(PADDING / 2 + 100, 25 / 2, 100, 25);
+        exchangeWindow.add(usernameField);
+
+        JButton launchUserButton = new JButton("Launch User");
+        launchUserButton.setBounds(PADDING / 2 + 100 + 100, 25 / 2, 175, 25);
+        exchangeWindow.add(launchUserButton);
+
+        // FINAL WINDOW SETUP
+        exchangeWindow.setSize(800, 600);
+        exchangeWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        exchangeWindow.setLayout(null);
+        exchangeWindow.setVisible(true);
+
         // #region debug
         System.out.println("creating user and placing orders");
         User dummy = new User("dummy-user", 1_000_000);
+        // create user thread
+        // Thread userThread = new Thread(dummy, "user");
+        // userThread.start();
+
         try {
             placeOrder(new Order(assets.get(0), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(1), OrderType.BUY, true, 10, 10, dummy));
@@ -236,5 +295,8 @@ public class Exchange {
                     "InsufficientFundsException thrown when adding funds. This is impossible. Check the method for changing user's balance");
         }
         System.out.println("Successfully executed order " + order.toString());
+    }
+
+    private void setupGUI() {
     }
 }
