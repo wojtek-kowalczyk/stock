@@ -9,6 +9,7 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import java.awt.event.*;
 
 import exceptions.InsufficientFundsException;
 import exceptions.NotEnoughSharesException;
@@ -294,6 +295,7 @@ public class Exchange {
                 (WIDTH - 2 * PADDING) / 2,
                 (HEIGHT - 3 * PADDING) / 2);
         exchangeWindow.add(ordersScrollPane);
+
         // USER LOGIN AREA
         usernameLabel = new JLabel("username:");
         usernameLabel.setBounds(PADDING / 2, 0, 100, 50);
@@ -305,6 +307,14 @@ public class Exchange {
 
         launchUserButton = new JButton("Launch User");
         launchUserButton.setBounds(PADDING / 2 + 100 + 100, 25 / 2, 175, 25);
+        launchUserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                consoleArea.append("Launching user with username " + usernameField.getText() + "\n");
+                Thread t = new Thread(new User(usernameField.getText(), User.DEAFULT_BALANCE));
+                t.start();
+            }
+        });
         exchangeWindow.add(launchUserButton);
 
         // FINAL WINDOW SETUP
