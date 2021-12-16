@@ -14,7 +14,7 @@ public class Asset {
 
     @Override
     public String toString() {
-        return name + ": $" + price + "\t| total shares: " + totalShares;
+        return name + ":\t$" + price + "\t| total shares: " + totalShares;
     }
 
     public int getTotalShares() {

@@ -1,0 +1,7 @@
+I RAN INTO SUCH EXCEPTION ONE TIME
+Exception in thread "main" java.lang.IllegalArgumentException: bound must be positive
+        at java.base/java.util.Random.nextInt(Random.java:322)
+        at Exchange.createAssets(Exchange.java:208)
+        at Exchange.init(Exchange.java:49)
+        at GUI.main(GUI.java:9)
+INVESTIGATE

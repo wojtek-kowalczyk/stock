@@ -1,4 +1,3 @@
-import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Random;
@@ -7,13 +6,13 @@ import java.util.Scanner;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import exceptions.InsufficientFundsException;
 import exceptions.NotEnoughSharesException;
 import exceptions.UnhandledOrderTypeException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +32,22 @@ public class Exchange {
 
     private final String ASSETS_DATA_FILENAME = "Assets.txt";
 
+    // GUI elements
+    private final int PADDING = 50;
+    private final int WIDTH = 1200;
+    private final int HEIGHT = 900;
+
+    private JFrame exchangeWindow;
+    private JTextArea assetsArea;
+    private JScrollPane assetScrollPane;
+    private JTextArea consoleArea;
+    private JScrollPane consoleScrollPane;
+    private JTextArea ordersArea;
+    private JScrollPane ordersScrollPane;
+    private JLabel usernameLabel;
+    private JTextField usernameField;
+    private JButton launchUserButton;
+
     private ArrayList<Asset> assets;
     private ArrayList<Order> orders; // earlier orders have lower index
 
@@ -46,54 +61,7 @@ public class Exchange {
     public void init() {
         System.out.println("creating assets");
         createAssets();
-
-        // GUI
-        final int PADDING = 50;
-        final int WIDTH = 800;
-        final int HEIGHT = 600;
-        JFrame exchangeWindow = new JFrame("Exchange");
-
-        // OUTPUT FIELDS
-        JTextArea assetArea = new JTextArea("ASSETS WILL BE DISPLAYED HERE");
-        assetArea.setBounds(PADDING, PADDING, WIDTH - 2 * PADDING, (HEIGHT - 2 * PADDING) / 2);
-        assetArea.setEditable(false);
-        exchangeWindow.add(assetArea);
-
-        JTextArea consoleArea = new JTextArea("CONSOLE OUTPUT WILL BE DISPLAYED HERE");
-        consoleArea.setBounds(
-                PADDING,
-                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
-                (WIDTH - 2 * PADDING) / 2 - PADDING / 2,
-                (HEIGHT - 3 * PADDING) / 2);
-        consoleArea.setEditable(false);
-        exchangeWindow.add(consoleArea);
-        JTextArea ordersArea = new JTextArea("ACTIVE ORDERS WILL BE DISPLAYED HERE");
-        ordersArea.setBounds(
-                PADDING + (WIDTH - 2 * PADDING) / 2 - PADDING / 2 + PADDING / 2,
-                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
-                (WIDTH - 2 * PADDING) / 2,
-                (HEIGHT - 3 * PADDING) / 2);
-        ordersArea.setEditable(false);
-        exchangeWindow.add(ordersArea);
-
-        // USER LOGIN AREA
-        JLabel usernameLabel = new JLabel("username:");
-        usernameLabel.setBounds(PADDING / 2, 0, 100, 50);
-        exchangeWindow.add(usernameLabel);
-
-        JTextField usernameField = new JTextField();
-        usernameField.setBounds(PADDING / 2 + 100, 25 / 2, 100, 25);
-        exchangeWindow.add(usernameField);
-
-        JButton launchUserButton = new JButton("Launch User");
-        launchUserButton.setBounds(PADDING / 2 + 100 + 100, 25 / 2, 175, 25);
-        exchangeWindow.add(launchUserButton);
-
-        // FINAL WINDOW SETUP
-        exchangeWindow.setSize(800, 600);
-        exchangeWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        exchangeWindow.setLayout(null);
-        exchangeWindow.setVisible(true);
+        setupGUI();
 
         // #region debug
         System.out.println("creating user and placing orders");
@@ -109,11 +77,6 @@ public class Exchange {
             placeOrder(new Order(assets.get(2), OrderType.BUY, true, 5, 10_000, dummy));
             placeOrder(new Order(assets.get(3), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(4), OrderType.BUY, true, 10, 10, dummy));
-
-            System.out.println("All orders: ");
-            for (Order order : orders) {
-                System.out.println(order.toString());
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -146,16 +109,17 @@ public class Exchange {
             asset.price = getNewPrice(asset.price, MIN_PRICE_CHANGE, MAX_PRICE_CHANGE);
         }
 
-        // #region debug
-        System.out.println("Assets:");
+        // output to GUI
+        String assetsString = "Assets:\n";
         for (Asset asset : assets) {
-            System.out.println(asset.toString());
+            assetsString += asset.toString() + "\n";
         }
-        System.out.println("Orders:");
+        assetsArea.setText(assetsString);
+        String ordersString = "Orders:\n";
         for (Order order : orders) {
-            System.out.println(order.toString());
+            ordersString += order.toString() + "\n";
         }
-        // #endregion
+        ordersArea.setText(ordersString);
 
         while (checkOrders()) {
             // ? is this a good idea? seems like a workaround
@@ -165,10 +129,10 @@ public class Exchange {
         }
 
         // #region debug
-        System.out.println("Orders After checking :");
-        for (Order order : orders) {
-            System.out.println(order.toString());
-        }
+        // System.out.println("Orders After checking :");
+        // for (Order order : orders) {
+        // System.out.println(order.toString());
+        // }
         // #endregion
 
     }
@@ -245,16 +209,17 @@ public class Exchange {
                 switch (order.type) {
                     case BUY:
                         if (order.price >= order.asset.price) {
-                            System.out.println("executing buy order. order price: " + order.price + ", asset price: "
-                                    + order.asset.price);
+                            consoleArea
+                                    .append("executing buy order. order price: " + order.price + ", asset price: "
+                                            + order.asset.price + "\n");
                             executeOrder(order);
                             return true;
                         }
                         break;
                     case SELL:
                         if (order.price <= order.asset.price) {
-                            System.out.println("executing sell order. order price: " + order.price + ", asset price: "
-                                    + order.asset.price);
+                            consoleArea.append("executing sell order. order price: " + order.price + ", asset price: "
+                                    + order.asset.price + "\n");
                             executeOrder(order);
                             return true;
                         }
@@ -294,9 +259,58 @@ public class Exchange {
             System.out.println(
                     "InsufficientFundsException thrown when adding funds. This is impossible. Check the method for changing user's balance");
         }
-        System.out.println("Successfully executed order " + order.toString());
+        consoleArea.append("Successfully executed order " + order.toString() + "\n");
     }
 
     private void setupGUI() {
+        // GUI
+        exchangeWindow = new JFrame("Exchange");
+
+        // OUTPUT FIELDS
+        assetsArea = new JTextArea("");
+        assetScrollPane = new JScrollPane(assetsArea);
+        assetScrollPane.setBounds(PADDING, PADDING, WIDTH - 2 * PADDING, (HEIGHT - 2 * PADDING) / 2);
+        assetsArea.setEditable(false);
+        exchangeWindow.add(assetScrollPane);
+
+        consoleArea = new JTextArea();
+        consoleArea.setEditable(false);
+        consoleScrollPane = new JScrollPane(consoleArea);
+        consoleScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        consoleScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        consoleScrollPane.setBounds(
+                PADDING,
+                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
+                (WIDTH - 2 * PADDING) / 2 - PADDING / 2,
+                (HEIGHT - 3 * PADDING) / 2);
+        exchangeWindow.add(consoleScrollPane);
+
+        ordersArea = new JTextArea("");
+        ordersArea.setEditable(false);
+        ordersScrollPane = new JScrollPane(ordersArea);
+        ordersScrollPane.setBounds(
+                PADDING + (WIDTH - 2 * PADDING) / 2 - PADDING / 2 + PADDING / 2,
+                PADDING + (HEIGHT - 2 * PADDING) / 2 + PADDING / 2,
+                (WIDTH - 2 * PADDING) / 2,
+                (HEIGHT - 3 * PADDING) / 2);
+        exchangeWindow.add(ordersScrollPane);
+        // USER LOGIN AREA
+        usernameLabel = new JLabel("username:");
+        usernameLabel.setBounds(PADDING / 2, 0, 100, 50);
+        exchangeWindow.add(usernameLabel);
+
+        usernameField = new JTextField();
+        usernameField.setBounds(PADDING / 2 + 100, 25 / 2, 100, 25);
+        exchangeWindow.add(usernameField);
+
+        launchUserButton = new JButton("Launch User");
+        launchUserButton.setBounds(PADDING / 2 + 100 + 100, 25 / 2, 175, 25);
+        exchangeWindow.add(launchUserButton);
+
+        // FINAL WINDOW SETUP
+        exchangeWindow.setSize(WIDTH, HEIGHT);
+        exchangeWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        exchangeWindow.setLayout(null);
+        exchangeWindow.setVisible(true);
     }
 }
