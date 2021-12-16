@@ -79,6 +79,7 @@ public class Exchange {
             placeOrder(new Order(assets.get(3), OrderType.BUY, true, 10, 10, dummy));
             placeOrder(new Order(assets.get(4), OrderType.BUY, true, 10, 10, dummy));
         } catch (Exception e) {
+            consoleArea.append(e.getMessage() + "\n");
             e.printStackTrace();
         }
         // #endregion
@@ -152,11 +153,12 @@ public class Exchange {
     }
 
     public void placeOrder(Order order) throws NotEnoughSharesException, InsufficientFundsException {
-        if (order.quantity > order.asset.getTotalShares())
-            throw new NotEnoughSharesException("not enough shares", order.quantity, order.asset.getTotalShares());
+        if ((order.type == OrderType.BUY && order.quantity > order.asset.getTotalShares()) ||
+                (order.type == OrderType.SELL && order.user.getOwnedAmount(order.asset) < order.quantity))
+            throw new NotEnoughSharesException("not enough shares to " + order.type, order.quantity,
+                    order.asset.getTotalShares());
         order.user.changeBalance(-order.quantity * order.price); // negative change = subtract
         orders.add(order);
-        // temp ! commented out for debugging
         // while (checkOrders()) {
         // }
     }
@@ -242,6 +244,7 @@ public class Exchange {
                 case BUY:
                     // user already paid when placing the order
                     order.asset.changeShares(-order.quantity);
+                    order.user.registerAsset(order.asset, order.quantity);
                     break;
                 case SELL:
                     order.user.changeBalance(+order.quantity * order.price);

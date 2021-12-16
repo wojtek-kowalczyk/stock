@@ -1,8 +1,9 @@
-import java.util.TreeMap;
+import java.util.HashMap;
 import java.awt.GridLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import exceptions.InsufficientFundsException;
@@ -10,12 +11,13 @@ import exceptions.InsufficientFundsException;
 public class User implements Runnable {
     public static final float DEAFULT_BALANCE = 100_000f;
     public final String username;
-    public TreeMap<Asset, Integer> ownedAssets; // <asset, quantity>
+    private HashMap<Asset, Integer> ownedAssets; // <asset, quantity>
     private float balance;
 
     public User(String username, float initialBalance) {
         this.username = username;
         this.balance = (initialBalance < 0 ? 0f : initialBalance);
+        this.ownedAssets = new HashMap<Asset, Integer>();
     }
 
     @Override
@@ -36,6 +38,25 @@ public class User implements Runnable {
         setupGUI();
     }
 
+    public void registerAsset(Asset asset, int quantity) {
+        if (ownedAssets.containsKey(asset)) {
+            // modify the amount owned
+            ownedAssets.put(asset, ownedAssets.get(asset) + quantity);
+            // run with -ea to enable assertions.
+            // assert ownedAssets.get(asset) >= 0 : "User: " + username + " had: " +
+            // ownedAssets.get(asset)
+            // + " assets for asset: " + asset.getName()
+            // + ". This is impossible. Trace the asset through logs.";
+        } else {
+            // put it the first time
+            ownedAssets.put(asset, quantity);
+        }
+    }
+
+    public int getOwnedAmount(Asset asset) {
+        return ownedAssets.get(asset);
+    }
+
     private void setupGUI() {
 
         // ! BAD CODE WARNING
@@ -43,9 +64,11 @@ public class User implements Runnable {
         JLabel assetNameLabel;
         JLabel assetQuantityLabel;
         JLabel assetPriceLabel;
+        JLabel userDataLabel;
         JTextField assetNameField;
         JTextField assetQuantityField;
         JTextField assetPriceField;
+        JTextArea userDataArea;
         JButton buyButton;
         JButton sellButton;
 
@@ -58,7 +81,17 @@ public class User implements Runnable {
         assetPriceLabel = new JLabel("price:");
         buyButton = new JButton("BUY");
         sellButton = new JButton("SELL");
+        userDataLabel = new JLabel("user data:");
+        userDataArea = new JTextArea();
+        userDataArea.setEditable(false);
+        userDataArea.setText("username: " + username + "\nbalance: " + balance + "\nowned assets:\n");
+        for (Asset asset : ownedAssets.keySet()) {
+            String assetStr = asset.getName() + "\t owned: " + ownedAssets.get(asset) + "\n";
+            userDataArea.append(assetStr);
+        }
 
+        userWindow.add(userDataLabel);
+        userWindow.add(userDataArea);
         userWindow.add(assetNameLabel);
         userWindow.add(assetNameField);
         userWindow.add(assetQuantityLabel);
