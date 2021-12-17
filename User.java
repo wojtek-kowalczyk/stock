@@ -3,6 +3,7 @@ import java.awt.GridLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
@@ -69,6 +70,7 @@ public class User implements Runnable {
         JTextField assetQuantityField;
         JTextField assetPriceField;
         JTextArea userDataArea;
+        JScrollPane userDataScrollPane;
         JButton buyButton;
         JButton sellButton;
 
@@ -83,6 +85,8 @@ public class User implements Runnable {
         sellButton = new JButton("SELL");
         userDataLabel = new JLabel("user data:");
         userDataArea = new JTextArea();
+        userDataScrollPane = new JScrollPane(userDataArea);
+        userDataScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         userDataArea.setEditable(false);
         userDataArea.setText("username: " + username + "\nbalance: " + balance + "\nowned assets:\n");
         for (Asset asset : ownedAssets.keySet()) {
@@ -91,7 +95,7 @@ public class User implements Runnable {
         }
 
         userWindow.add(userDataLabel);
-        userWindow.add(userDataArea);
+        userWindow.add(userDataScrollPane);
         userWindow.add(assetNameLabel);
         userWindow.add(assetNameField);
         userWindow.add(assetQuantityLabel);
@@ -101,7 +105,7 @@ public class User implements Runnable {
         userWindow.add(buyButton);
         userWindow.add(sellButton);
 
-        userWindow.setLayout(new GridLayout(4, 2));
+        userWindow.setLayout(new GridLayout(5, 2));
         userWindow.setSize(600, 400);
         userWindow.setVisible(true);
 

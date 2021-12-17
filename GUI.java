@@ -1,6 +1,3 @@
-import javax.swing.*;
-import java.awt.event.*;
-
 // todo - consider moving the main function to exchange or think how this class can handle GUI
 
 public class GUI {
