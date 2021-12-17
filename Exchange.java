@@ -13,6 +13,7 @@ import java.awt.event.*;
 
 import exceptions.InsufficientFundsException;
 import exceptions.NotEnoughSharesException;
+import exceptions.SingletonViolation;
 import exceptions.UnhandledOrderTypeException;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +54,12 @@ public class Exchange {
     private ArrayList<Order> orders; // earlier orders have lower index
 
     private boolean stop = false; // todo - consider a better implementation
+    public static Exchange instance; // singleton
 
-    public Exchange() {
+    public Exchange() throws SingletonViolation {
+        if (instance != null)
+            throw new SingletonViolation("Trying to make another instance of Singleton (Exchange)");
+        instance = this;
         assets = new ArrayList<Asset>();
         orders = new ArrayList<Order>();
     }
@@ -80,9 +85,13 @@ public class Exchange {
         stop = true;
     }
 
-    // ? is there a point in this? it returns a reference = can be modified
-    public List<Asset> getAssets() {
-        return assets;
+    public Asset getAssetByName(String name) {
+        for (Asset asset : assets) {
+            if (asset.getName().equals(name)) {
+                return asset;
+            }
+        }
+        return null;
     }
 
     private void executeTasks() {
@@ -109,14 +118,6 @@ public class Exchange {
             // this is because when order in the middle of the list is executed it triggers
             // a price change, and orders should be checked again, from the begining
         }
-
-        // #region debug
-        // System.out.println("Orders After checking :");
-        // for (Order order : orders) {
-        // System.out.println(order.toString());
-        // }
-        // #endregion
-
     }
 
     private float getNewPrice(float original, float minChange, float maxChange) {
@@ -163,6 +164,8 @@ public class Exchange {
             throw new UnhandledOrderTypeException("trying to place order of unhandled type.");
         }
         orders.add(order);
+        ordersArea.append(order.toString() + "\n"); // make it show in the UI immediately
+        logGUI(order.type + " order placed successfully.");
         while (checkOrders()) {
         }
     }
@@ -260,7 +263,7 @@ public class Exchange {
             }
             orders.remove(order);
             order.asset.priceReaction(order.type == OrderType.BUY, order.quantity);
-
+            // todo - the ordersArea will redraw only on next update. make it do that now
         } catch (InsufficientFundsException e) {
             // this will never happen when adding funds, and this function doesn't subtract
             // they are subtracted when placing the order
@@ -268,6 +271,10 @@ public class Exchange {
                     "InsufficientFundsException thrown when adding funds. This is impossible. Check the method for changing user's balance");
         }
         consoleArea.append("Successfully executed order " + order.toString() + "\n");
+    }
+
+    public void logGUI(String msg) {
+        consoleArea.append(msg + "\n");
     }
 
     private void setupGUI() {

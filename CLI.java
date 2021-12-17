@@ -1,6 +1,12 @@
+import exceptions.SingletonViolation;
+
 public class CLI {
     public static void main(String[] args) {
-        Exchange ex = new Exchange();
-        ex.init();
+        try {
+            Exchange ex = new Exchange();
+            ex.init();
+        } catch (SingletonViolation e) {
+            System.out.println(e.getMessage());
+        }
     }
 }
