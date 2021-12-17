@@ -64,26 +64,6 @@ public class Exchange {
         createAssets();
         setupGUI();
 
-        // #region debug
-        System.out.println("creating user and placing orders");
-        User dummy = new User("dummy-user", 1_000_000);
-        // create user thread
-        // Thread userThread = new Thread(dummy, "user");
-        // userThread.start();
-
-        try {
-            placeOrder(new Order(assets.get(0), OrderType.BUY, true, 10, 10, dummy));
-            placeOrder(new Order(assets.get(1), OrderType.BUY, true, 10, 10, dummy));
-            placeOrder(new Order(assets.get(2), OrderType.BUY, true, 10, 10, dummy));
-            placeOrder(new Order(assets.get(2), OrderType.BUY, true, 5, 10_000, dummy));
-            placeOrder(new Order(assets.get(3), OrderType.BUY, true, 10, 10, dummy));
-            placeOrder(new Order(assets.get(4), OrderType.BUY, true, 10, 10, dummy));
-        } catch (Exception e) {
-            consoleArea.append(e.getMessage() + "\n");
-            e.printStackTrace();
-        }
-        // #endregion
-
         while (!stop) {
             try {
                 executeTasks();
@@ -152,15 +132,39 @@ public class Exchange {
         return newPrice;
     }
 
-    public void placeOrder(Order order) throws NotEnoughSharesException, InsufficientFundsException {
-        if ((order.type == OrderType.BUY && order.quantity > order.asset.getTotalShares()) ||
-                (order.type == OrderType.SELL && order.user.getOwnedAmount(order.asset) < order.quantity))
-            throw new NotEnoughSharesException("not enough shares to " + order.type, order.quantity,
-                    order.asset.getTotalShares());
-        order.user.changeBalance(-order.quantity * order.price); // negative change = subtract
-        orders.add(order);
+    public void placeOrder(Order order)
+            throws NotEnoughSharesException, InsufficientFundsException, UnhandledOrderTypeException {
+        // #region old
+        // if ((order.type == OrderType.BUY && order.quantity >
+        // order.asset.getTotalShares()) ||
+        // (order.type == OrderType.SELL && order.user.getOwnedAmount(order.asset) <
+        // order.quantity))
+        // throw new NotEnoughSharesException("not enough shares to " + order.type,
+        // order.quantity,
+        // order.asset.getTotalShares());
+        // order.user.changeBalance(-order.quantity * order.price); // negative change =
+        // subtract
+        // orders.add(order);
         // while (checkOrders()) {
         // }
+        // #endregion
+        if (order.type == OrderType.BUY) {
+            if (order.quantity > order.asset.getTotalShares()) {
+                throw new NotEnoughSharesException("not enough shares to BUY", order.quantity,
+                        order.asset.getTotalShares());
+            }
+            order.user.changeBalance(-order.quantity * order.price); // negative change = subtract
+        } else if (order.type == OrderType.SELL) {
+            if (order.quantity > order.user.getOwnedAmount(order.asset)) {
+                throw new NotEnoughSharesException("not enough shares to SELL", order.quantity,
+                        order.user.getOwnedAmount(order.asset));
+            }
+        } else {
+            throw new UnhandledOrderTypeException("trying to place order of unhandled type.");
+        }
+        orders.add(order);
+        while (checkOrders()) {
+        }
     }
 
     private void createAssets() {
@@ -243,14 +247,14 @@ public class Exchange {
             switch (order.type) {
                 case BUY:
                     // user already paid when placing the order
-                    order.asset.changeShares(-order.quantity);
-                    order.user.registerAsset(order.asset, order.quantity);
+                    order.asset.changeShares(-order.quantity); // remove shares from stock
+                    order.user.changeOwnedAmount(order.asset, order.quantity); // add them to user
                     break;
                 case SELL:
-                    order.user.changeBalance(+order.quantity * order.price);
-                    order.asset.changeShares(+order.quantity);
+                    order.user.changeBalance(+order.quantity * order.price); // give user money
+                    order.asset.changeShares(+order.quantity); // add shares to stock
+                    order.user.changeOwnedAmount(order.asset, -order.quantity); // remove them from user
                     break;
-
                 default:
                     throw new UnhandledOrderTypeException("Add a switch case for type: " + order.type);
             }

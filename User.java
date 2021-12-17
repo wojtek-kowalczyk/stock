@@ -39,15 +39,15 @@ public class User implements Runnable {
         setupGUI();
     }
 
-    public void registerAsset(Asset asset, int quantity) {
+    public void changeOwnedAmount(Asset asset, int quantity) {
         if (ownedAssets.containsKey(asset)) {
             // modify the amount owned
             ownedAssets.put(asset, ownedAssets.get(asset) + quantity);
-            // run with -ea to enable assertions.
-            // assert ownedAssets.get(asset) >= 0 : "User: " + username + " had: " +
-            // ownedAssets.get(asset)
-            // + " assets for asset: " + asset.getName()
-            // + ". This is impossible. Trace the asset through logs.";
+            // * run with -ea to enable assertions.
+            assert ownedAssets.get(asset) >= 0 : "User: " + username + " had: " +
+                    ownedAssets.get(asset)
+                    + " shares for asset: " + asset.getName()
+                    + ". This is impossible. Trace the asset through logs.";
         } else {
             // put it the first time
             ownedAssets.put(asset, quantity);
