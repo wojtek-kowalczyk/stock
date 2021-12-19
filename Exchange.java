@@ -53,7 +53,7 @@ public class Exchange {
     private ArrayList<Asset> assets;
     private ArrayList<Order> orders; // earlier orders have lower index
 
-    private boolean stop = false; // todo - consider a better implementation
+    private boolean stop = false;
     public static Exchange instance; // singleton
 
     public Exchange() throws SingletonViolation {
@@ -64,8 +64,16 @@ public class Exchange {
         orders = new ArrayList<Order>();
     }
 
+    public static void main(String[] args) {
+        try {
+            Exchange ex = new Exchange();
+            ex.init();
+        } catch (SingletonViolation e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     public void init() {
-        System.out.println("creating assets");
         createAssets();
         setupGUI();
 
@@ -81,21 +89,7 @@ public class Exchange {
         }
     }
 
-    public void halt() {
-        stop = true;
-    }
-
-    public Asset getAssetByName(String name) {
-        for (Asset asset : assets) {
-            if (asset.getName().equals(name)) {
-                return asset;
-            }
-        }
-        return null;
-    }
-
     private void executeTasks() {
-        System.out.println("Executing tasks");
         for (Asset asset : assets) {
             asset.price = getNewPrice(asset.price, MIN_PRICE_CHANGE, MAX_PRICE_CHANGE);
         }
@@ -120,35 +114,21 @@ public class Exchange {
         }
     }
 
-    private float getNewPrice(float original, float minChange, float maxChange) {
-        Random rand = new Random();
-        // y = a*x + b, where b is the lower out limit, a is (upper-lower)
-        float changeAbs = (maxChange - minChange) * rand.nextFloat() + minChange;
+    public void halt() {
+        stop = true;
+    }
 
-        float newPrice = ((rand.nextFloat() < 0.5f) ? (original + changeAbs) : (original - changeAbs));
-        if (newPrice > MAX_ASSET_PRICE)
-            newPrice = MAX_ASSET_PRICE;
-        else if (newPrice < MIN_ASSET_PRICE)
-            newPrice = MIN_ASSET_PRICE;
-        return newPrice;
+    public Asset getAssetByName(String name) {
+        for (Asset asset : assets) {
+            if (asset.getName().equals(name)) {
+                return asset;
+            }
+        }
+        return null;
     }
 
     public void placeOrder(Order order)
             throws NotEnoughSharesException, InsufficientFundsException, UnhandledOrderTypeException {
-        // #region old
-        // if ((order.type == OrderType.BUY && order.quantity >
-        // order.asset.getTotalShares()) ||
-        // (order.type == OrderType.SELL && order.user.getOwnedAmount(order.asset) <
-        // order.quantity))
-        // throw new NotEnoughSharesException("not enough shares to " + order.type,
-        // order.quantity,
-        // order.asset.getTotalShares());
-        // order.user.changeBalance(-order.quantity * order.price); // negative change =
-        // subtract
-        // orders.add(order);
-        // while (checkOrders()) {
-        // }
-        // #endregion
         if (order.type == OrderType.BUY) {
             if (order.quantity > order.asset.getTotalShares()) {
                 throw new NotEnoughSharesException("not enough shares to BUY", order.quantity,
@@ -160,6 +140,7 @@ public class Exchange {
                 throw new NotEnoughSharesException("not enough shares to SELL", order.quantity,
                         order.user.getOwnedAmount(order.asset));
             }
+            order.user.changeOwnedAmount(order.asset, -order.quantity); // remove them from user
         } else {
             throw new UnhandledOrderTypeException("trying to place order of unhandled type.");
         }
@@ -168,6 +149,83 @@ public class Exchange {
         logGUI(order.type + " order placed successfully.");
         while (checkOrders()) {
         }
+    }
+
+    // returns false if no orders could be executed
+    public boolean checkOrders() {
+        try {
+            for (Order order : orders) {
+                switch (order.type) {
+                    case BUY:
+                        if (order.price >= order.asset.price && order.quantity <= order.asset.getAvailableShares()) {
+                            consoleArea
+                                    .append("executing buy order. order price: " + order.price + ", asset price: "
+                                            + order.asset.price + "\n");
+                            executeOrder(order);
+                            return true;
+                        }
+                        break;
+                    case SELL:
+                        if (order.price <= order.asset.price) {
+                            consoleArea.append("executing sell order. order price: " + order.price + ", asset price: "
+                                    + order.asset.price + "\n");
+                            executeOrder(order);
+                            return true;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } catch (UnhandledOrderTypeException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
+
+    public void executeOrder(Order order) throws UnhandledOrderTypeException {
+        try {
+            switch (order.type) {
+                case BUY:
+                    // user already paid when placing the order
+                    order.asset.changeShares(-order.quantity); // remove shares from stock
+                    order.user.changeOwnedAmount(order.asset, order.quantity); // add them to user
+                    break;
+                case SELL:
+                    order.user.changeBalance(+order.quantity * order.price); // give user money
+                    order.asset.changeShares(+order.quantity); // add shares to stock
+                    // there were removed (reserved) when placing order
+                    break;
+                default:
+                    throw new UnhandledOrderTypeException("Add a switch case for type: " + order.type);
+            }
+            orders.remove(order);
+            order.asset.priceReaction(order.type == OrderType.BUY, order.quantity);
+            // todo - the ordersArea will redraw only on next update. make it do that now
+        } catch (InsufficientFundsException e) {
+            // this will never happen when adding funds, and this function doesn't subtract
+            // they are subtracted when placing the order
+            System.out.println(
+                    "InsufficientFundsException thrown when adding funds. This is impossible. Check the method for changing user's balance");
+        }
+        consoleArea.append("Successfully executed order " + order.toString() + "\n");
+    }
+
+    public void logGUI(String msg) {
+        consoleArea.append(msg + "\n");
+    }
+
+    private float getNewPrice(float original, float minChange, float maxChange) {
+        Random rand = new Random();
+        // y = a*x + b, where b is the lower out limit, a is (upper-lower)
+        float changeAbs = (maxChange - minChange) * rand.nextFloat() + minChange;
+
+        float newPrice = ((rand.nextFloat() < 0.5f) ? (original + changeAbs) : (original - changeAbs));
+        if (newPrice > MAX_ASSET_PRICE)
+            newPrice = MAX_ASSET_PRICE;
+        else if (newPrice < MIN_ASSET_PRICE)
+            newPrice = MIN_ASSET_PRICE;
+        return newPrice;
     }
 
     private void createAssets() {
@@ -199,86 +257,9 @@ public class Exchange {
         }
     }
 
-    // * order execution scheme
-    // loop through orders in order of placement.
-    // if current order can be executed, execute it. This will lower or add shares
-    // then check the next one, but now consider that although order was placed,
-    // there might be not enough shares to fullfill that order (previous executed)
-    // if that's the case -> execute for as much shares as it's possible
-    // and then leave the order, while informing the user that their order was
-    // processed partially,
-    // and awaits further processing.
-    // ? add this Partial Processinng as an option?
-    // ? then if true, do what I said above, otherwise maket he order wait.
-
-    // returns false if no orders could be executed
-    public boolean checkOrders() {
-        System.out.println("checking orders");
-        try {
-            for (Order order : orders) {
-                switch (order.type) {
-                    case BUY:
-                        if (order.price >= order.asset.price) {
-                            consoleArea
-                                    .append("executing buy order. order price: " + order.price + ", asset price: "
-                                            + order.asset.price + "\n");
-                            executeOrder(order);
-                            return true;
-                        }
-                        break;
-                    case SELL:
-                        if (order.price <= order.asset.price) {
-                            consoleArea.append("executing sell order. order price: " + order.price + ", asset price: "
-                                    + order.asset.price + "\n");
-                            executeOrder(order);
-                            return true;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        } catch (UnhandledOrderTypeException e) {
-            System.out.println(e.getMessage());
-        }
-        return false;
-    }
-
-    public void executeOrder(Order order) throws UnhandledOrderTypeException {
-        System.out.println("executing order");
-        try {
-            switch (order.type) {
-                case BUY:
-                    // user already paid when placing the order
-                    order.asset.changeShares(-order.quantity); // remove shares from stock
-                    order.user.changeOwnedAmount(order.asset, order.quantity); // add them to user
-                    break;
-                case SELL:
-                    order.user.changeBalance(+order.quantity * order.price); // give user money
-                    order.asset.changeShares(+order.quantity); // add shares to stock
-                    order.user.changeOwnedAmount(order.asset, -order.quantity); // remove them from user
-                    break;
-                default:
-                    throw new UnhandledOrderTypeException("Add a switch case for type: " + order.type);
-            }
-            orders.remove(order);
-            order.asset.priceReaction(order.type == OrderType.BUY, order.quantity);
-            // todo - the ordersArea will redraw only on next update. make it do that now
-        } catch (InsufficientFundsException e) {
-            // this will never happen when adding funds, and this function doesn't subtract
-            // they are subtracted when placing the order
-            System.out.println(
-                    "InsufficientFundsException thrown when adding funds. This is impossible. Check the method for changing user's balance");
-        }
-        consoleArea.append("Successfully executed order " + order.toString() + "\n");
-    }
-
-    public void logGUI(String msg) {
-        consoleArea.append(msg + "\n");
-    }
-
     private void setupGUI() {
-        // GUI
+        // ! BAD CODE WARNING
+
         exchangeWindow = new JFrame("Exchange");
 
         // OUTPUT FIELDS

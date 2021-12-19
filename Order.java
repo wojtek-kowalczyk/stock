@@ -4,6 +4,7 @@ public class Order {
     public final int quantity;
     public final float price;
     public final User user;
+    // todo allowPartial has no effect
     public final boolean allowPartial; // allow the order to be partially executed
 
     public Order(Asset asset, OrderType type, boolean allowPartial, int quantity, float price, User user) {

@@ -104,13 +104,7 @@ public class User implements Runnable {
         userDataScrollPane = new JScrollPane(userDataArea);
         userDataScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         userDataArea.setEditable(false);
-        // userDataArea.setText("username: " + username + "\nbalance: " + balance +
-        // "\nowned assets:\n");
-        // for (Asset asset : ownedAssets.keySet()) {
-        // String assetStr = asset.getName() + "\t owned: " + ownedAssets.get(asset) +
-        // "\n";
-        // userDataArea.append(assetStr);
-        // }
+
         setUserDataText();
 
         // ? is there a way not to duplicate this code (only difference is the type),

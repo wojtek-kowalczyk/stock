@@ -27,17 +27,15 @@ public class Asset {
 
     public void changeShares(int diff) {
         if (availableShares + diff < 0)
+            // ? is this a good idea? or maybe use assert?
             throw new RuntimeException("Trying to set availableShares to a negative value. This should never happen.");
         availableShares += diff;
     }
 
     public void priceReaction(boolean isBuy, int quantity) {
         // 10% assets sold = 10% price change
-        System.out.println("Order execution triggered price change. ");
-        System.out.println("previous: " + this.price);
         float percentage = ((float) quantity / this.totalShares);
         this.price = this.price * (1 + (isBuy ? percentage : -percentage));
-        System.out.println("current: " + this.price);
     }
 
     public String getName() {
